@@ -6,28 +6,37 @@ import { ArrowRight, LockKeyhole, ShieldCheck, Utensils } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
+import { UserRole } from "@/types/auth";
 
 export default function Login() {
     const router = useRouter();
-    const [role, setRole] = useState<"admin" | "student">("admin");
+    const [role, setRole] = useState<UserRole>("student");
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
 
-    const handleLogin = (event: FormEvent<HTMLFormElement>) => {
+    const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setError("");
 
-        if (role === "admin" && username === "admin" && password === "admin123") {
-            router.push("/dashboard");
-            return;
-        }
+        try {
+            const response = await fetch("/api/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username, password, role }),
+            });
 
-        setError(
-            role === "student"
-                ? "Student sign in is not available yet."
-                : "That username or password is not valid."
-        );
+            const result = await response.json();
+
+            if (!response.ok) {
+                setError(result.error ?? "That username or password is not valid.");
+                return;
+            }
+
+            router.push("/dashboard");
+        } catch {
+            setError("Unable to sign in right now. Please try again.");
+        }
     };
 
     return (
@@ -66,20 +75,27 @@ export default function Login() {
                         <p className="mt-2 text-sm text-[#69746b]">Sign in to manage your food forecast.</p>
                     </div>
 
-                    <ButtonGroup className="mb-8 grid w-full grid-cols-2" orientation="horizontal">
-                        <Button
-                            type="button"
-                            variant={role === "admin" ? "default" : "outline"}
-                            onClick={() => { setRole("admin"); setError(""); }}
-                        >
-                            Admin
-                        </Button>
+                    <ButtonGroup className="mb-8 grid w-full grid-cols-3" orientation="horizontal">
                         <Button
                             type="button"
                             variant={role === "student" ? "default" : "outline"}
                             onClick={() => { setRole("student"); setError(""); }}
                         >
                             Student
+                        </Button>
+                        <Button
+                            type="button"
+                            variant={role === "faculty" ? "default" : "outline"}
+                            onClick={() => { setRole("faculty"); setError(""); }}
+                        >
+                            Faculty
+                        </Button>
+                        <Button
+                            type="button"
+                            variant={role === "admin" ? "default" : "outline"}
+                            onClick={() => { setRole("admin"); setError(""); }}
+                        >
+                            Admin
                         </Button>
                     </ButtonGroup>
 
